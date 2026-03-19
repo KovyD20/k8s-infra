@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hr-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hr
+  template:
+    metadata:
+      labels:
+        app: hr
+    spec:
+      containers:
+      - name: hr
+        image: hr:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: AUTH_SERVICE_URL
+          value: http://auth-service
+        imagePullPolicy: Never
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hr-service
+spec:
+  selector:
+    app: hr
+  ports:
+    - port: 80
+      targetPort: 3000
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hr-db-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hr-db
+  template:
+    metadata:
+      labels:
+        app: hr-db
+    spec:
+      containers:
+      - name: hr-db
+        image: postgres:latest
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_PASSWORD
+          value: mysecurepassword
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hr-db-service
+spec:
+  selector:
+    app: hr-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hr-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: hr-deployment
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50
