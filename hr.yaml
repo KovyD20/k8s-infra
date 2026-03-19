@@ -23,19 +23,23 @@ spec:
         imagePullPolicy: Never
         resources:
           requests:
-            memory: "256Mi"
-            cpu: "500m"
+            memory: "64Mi"
+            cpu: "50m"
           limits:
-            memory: "512Mi"
-            cpu: "1"
+            memory: "128Mi"
+            cpu: "200m"
         readinessProbe:
           httpGet:
             path: /healthz
             port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
         livenessProbe:
           httpGet:
             path: /healthz
             port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
 ---
 apiVersion: v1
 kind: Service
@@ -65,12 +69,34 @@ spec:
     spec:
       containers:
       - name: hr-db
-        image: postgres:13
+        image: postgres:15.3
         ports:
         - containerPort: 5432
         env:
         - name: POSTGRES_PASSWORD
-          value: mysecurepassword
+          valueFrom:
+            secretKeyRef:
+              name: hr-db-secret
+              key: POSTGRES_PASSWORD
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+          initialDelaySeconds: 10
+          periodSeconds: 10
 ---
 apiVersion: v1
 kind: Service
@@ -93,8 +119,8 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: hr-deployment
-  minReplicas: 1
-  maxReplicas: 3
+  minReplicas: 2
+  maxReplicas: 6
   metrics:
   - type: Resource
     resource:

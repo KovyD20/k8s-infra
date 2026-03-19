@@ -6,6 +6,10 @@ app.get('/', (req, res) => {
   res.send('Hello World!');
 });
 
+app.get('/healthz', (req, res) => {
+  res.sendStatus(200);
+});
+
 app.get('/auth', (req, res) => {
   res.json({ auth: 'ok' });
 });

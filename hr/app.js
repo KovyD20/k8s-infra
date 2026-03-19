@@ -3,6 +3,10 @@ const axios = require('axios');
 const app = express();
 const port = 3000;
 
+app.get('/healthz', (req, res) => {
+  res.sendStatus(200);
+});
+
 app.get('/hr', async (req, res) => {
     const r = await axios.get(process.env.AUTH_SERVICE_URL + '/auth');
     res.json({hr: 'ok', auth: r.data});
